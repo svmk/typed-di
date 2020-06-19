@@ -1,17 +1,18 @@
+use crate::error::BuildError;
 use std::error::Error;
 use std::fmt;
 
 #[derive(Debug)]
 pub struct ServiceBuildError {
     service_id: String,
-    error: Box<dyn Error + Send + Sync>,
+    error: BuildError,
 }
 
 impl ServiceBuildError {
-    pub fn new(service_id: String, error: impl Error + Send + Sync + 'static) -> ServiceBuildError {
+    pub fn new(service_id: String, error: BuildError) -> ServiceBuildError {
         return ServiceBuildError {
             service_id,
-            error: Box::new(error),
+            error,
         }
     }
 }
@@ -23,7 +24,5 @@ impl fmt::Display for ServiceBuildError {
 }
 
 impl Error for ServiceBuildError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        return Some(self.error.as_ref());
-    }
+    
 }

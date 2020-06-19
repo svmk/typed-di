@@ -16,6 +16,8 @@ mod service_build_error;
 pub use self::service_build_error::ServiceBuildError;
 mod join_error;
 pub use self::join_error::JoinError;
+mod build_error;
+pub use self::build_error::BuildError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -58,7 +60,7 @@ impl Error {
         return Error::ArgumentDowncastError(ArgumentDowncastError::new(id, argument_type));
     }
 
-    pub fn service_build(service_id: String, error: impl StdError + Send + Sync + 'static) -> Error {
+    pub fn service_build(service_id: String, error: BuildError) -> Error {
         return Error::ServiceBuildError(ServiceBuildError::new(service_id, error));
     }
 

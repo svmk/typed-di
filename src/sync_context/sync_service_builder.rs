@@ -1,6 +1,6 @@
 use crate::service_instance::ServiceInstance;
 use crate::sync_context::sync_resolver::SyncResolver;
-use crate::error::Error;
+use crate::error::{Error, BuildError};
 use std::sync::{Arc, Mutex};
 use std::clone::Clone;
 use std::fmt;
@@ -41,7 +41,7 @@ impl SyncServiceBuilder {
     ) -> SyncServiceBuilder
         where
             S: Send + Sync + 'static,
-            F: Fn(&SyncResolver) -> Result<S, Error> + Send + Sync + 'static,
+            F: Fn(&SyncResolver) -> Result<S, BuildError> + Send + Sync + 'static,
     {
         let factory = move |context: &SyncResolver| {
             let service = (factory)(context).map_err(move |error| {

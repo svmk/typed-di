@@ -1,0 +1,1 @@
+pub type BuildError = failure::Error;

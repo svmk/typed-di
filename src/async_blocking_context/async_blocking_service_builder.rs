@@ -2,7 +2,7 @@ use crate::service_instance::ServiceInstance;
 use crate::sync_context::sync_resolver::SyncResolver;
 use std::future::Future;
 use futures::future::{FutureExt, TryFutureExt};
-use crate::error::Error;
+use crate::error::{Error, BuildError, JoinError};
 use std::sync::{Arc, Mutex};
 use std::pin::Pin;
 use std::clone::Clone;
@@ -44,27 +44,32 @@ struct ServiceBuilderInner {
 }
 
 impl AsyncBlockingServiceBuilder {
-    pub fn from_async_factory<S, Fut>(service_id: &'static str, factory: impl Fn(&SyncResolver) -> Result<Fut, Error> + Send + Sync + 'static) -> AsyncBlockingServiceBuilder
+    pub fn from_async_factory<S, Fut>(service_id: &'static str, factory: impl Fn(&SyncResolver) -> Result<Fut, BuildError> + Send + Sync + 'static) -> AsyncBlockingServiceBuilder
         where
             S: Send + Sync + 'static,
-            Fut: Future<Output=Result<S, Error>> + Send + 'static,
+            Fut: Future<Output=Result<S, BuildError>> + Send + 'static,
     {
         let factory = Arc::new(factory);
         let factory = move |context: &SyncResolver| {
             let context = context.clone();
             let thread_factory = factory.clone(); 
-            let future = tokio::task::spawn_blocking(move || -> Result<Fut, Error> {
+            let future = tokio::task::spawn_blocking(move || -> Result<Fut, BuildError> {
                 return (thread_factory)(&context);
             });
             let future = future
                 .map_err(move |error| {
-                    return Error::service_build(service_id.to_string(), error);
+                    return Error::join_error(JoinError::new(error));
                 })
                 .and_then(move |service_result| {
+                    let service_result = service_result.map_err(|error| {
+                        return Error::service_build(service_id.to_string(), error);
+                    });
                     match service_result {
                         Ok(service_result_future) => {
                             return service_result_future.map(move |service| -> Result<ServiceInstance, Error> {
-                                let service = service?;
+                                let service = service.map_err(|error|{
+                                    return Error::service_build(service_id.to_string(), error);
+                                })?;
                                 let service = ServiceInstance::new(service_id, service);
                                 return Ok(service);
                             }).boxed();
@@ -74,9 +79,9 @@ impl AsyncBlockingServiceBuilder {
                         },
                     }
                 });
-            let future = future.map_err(move |error| {
-                return Error::service_build(service_id.to_string(), error);
-            });
+            // let future = future.map_err(move |error| {
+            //     return Error::service_build(service_id.to_string(), error);
+            // });
             let future: Pin<Box<dyn Future<Output=Result<ServiceInstance, Error>> + Send>> = Box::pin(future);
             return Ok(future);
         };
@@ -91,13 +96,15 @@ impl AsyncBlockingServiceBuilder {
         };
     }
 
-    pub fn from_future<S>(service_id: &'static str, factory: impl Future<Output=Result<S, Error>> + Send + 'static) -> AsyncBlockingServiceBuilder
+    pub fn from_future<S>(service_id: &'static str, factory: impl Future<Output=Result<S, BuildError>> + Send + 'static) -> AsyncBlockingServiceBuilder
         where
             S: Send + Sync + 'static,
     {
         let factory = factory.map(move |service_result| {
             return service_result.map(move |service| {
                 return ServiceInstance::new(service_id, service);
+            }).map_err(|error| {
+                return Error::service_build(service_id.to_string(), error);
             });
         });
         let inner = ServiceBuilderInner {
