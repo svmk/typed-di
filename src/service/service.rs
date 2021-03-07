@@ -77,17 +77,14 @@ impl <T>Clone for Service<T> {
 }
 
 impl <T>ServiceAccess<T> for Service<T> {
-    fn from_instance(instance: ServiceInstance) -> Result<Service<T>, Error> where T: Any, T: 'static {
-        if instance.get_type_id() == TypeId::of::<T>() {
-            let service_inner = ServiceInner {
-                instance,
-                reference: ServiceReference::Owned(PhantomData),
-            };
-            let service = Arc::new(service_inner);
-            let service = Service(service);
-            return Ok(service);
-        }
-        return Err(Error::service_cast_error(instance.get_name().clone()))
+    fn from_instance(instance: ServiceInstance) -> Service<T> where T: Any, T: 'static {
+        let service_inner = ServiceInner {
+            instance,
+            reference: ServiceReference::Owned(PhantomData),
+        };
+        let service = Arc::new(service_inner);
+        let service = Service(service);
+        return service;
     }
 
     fn from_trait_object(instance: ServiceInstance, trait_object: T) -> Service<T>

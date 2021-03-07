@@ -42,7 +42,7 @@ impl ServiceBuilder {
     {
         let mut state = self.state.lock().await;
         if let Some(service_instance) = state.get_service_instance() {
-            return service_instance.as_service();   
+            return Ok(service_instance.as_service());
         }
         let service_factory = (self.factory)(resolver);
         let mut service = service_factory.await?;
@@ -50,9 +50,9 @@ impl ServiceBuilder {
             let configurator_future = (configurator)(resolver, service.as_mut());
             configurator_future.await?;
         }
-        let service = ServiceInstance::new(self.service_name.clone(), service);
-        state.store_service(service.clone())?;
-        return service.as_service();
+        let service_instance = ServiceInstance::new(self.service_name.clone(), service);
+        state.store_service(service_instance.clone())?;
+        return Ok(service_instance.as_service());
     }
 }
 
