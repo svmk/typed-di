@@ -1,6 +1,8 @@
 use crate::error::Error;
 use crate::service::service_access::ServiceAccess;
 use crate::service::service_instance::ServiceInstance;
+use crate::service::service_constructor::ServiceConstructor;
+use crate::service::service_id::ServiceId;
 use std::fmt;
 use std::sync::{Arc};
 use std::any::{Any, TypeId};
@@ -65,7 +67,6 @@ impl <T>Deref for Service<T> {
     }
 }
 
-/// TODO: Implement drop in separated thread.
 unsafe impl <T>Sync for Service<T> {}
 unsafe impl <T>Send for Service<T> {}
 
@@ -98,11 +99,30 @@ impl <T>ServiceAccess<T> for Service<T> {
         let service_ref = Service(Arc::new(service_ref));
         return service_ref;
     }
+
     fn get_instance(&self) -> ServiceInstance {
         return self.0.instance.clone();
     }
 
     fn as_ref(&self) -> &T {
         return self.deref();
+    }
+}
+
+impl <T>ServiceConstructor<T> for Service<T> 
+    where 
+        T: Send + Sync + Any + 'static,
+{
+    fn new(id: ServiceId<T>, service: T) -> Service<T> {
+        let name = id.get_name().clone();
+        let service = Box::new(service);
+        let instance = ServiceInstance::new(name, service);
+        let service_inner = ServiceInner {
+            instance,
+            reference: ServiceReference::Owned(PhantomData),
+        };
+        let service = Arc::new(service_inner);
+        let service = Service(service);
+        return service;
     }
 }

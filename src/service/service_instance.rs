@@ -20,7 +20,7 @@ impl ServiceInstance {
         return ServiceInstance {
             type_id: service.type_id(),
             service_name,
-            service: Arc::new(Box::new(service)),
+            service: Arc::new(service),
         }
     }
 

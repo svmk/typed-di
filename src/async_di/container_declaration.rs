@@ -112,6 +112,7 @@ impl ContainerDeclaration {
                 service_builder.register_configurator(configurator);
                 return Ok(());
             }
+            
     fn get_mut_service_builder(&mut self, service_name: &ServiceName) -> Result<&mut ServiceBuilder, Error> {
         if let Some(service) = self.services.get_mut(service_name) {
             return Ok(service);

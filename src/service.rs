@@ -1,3 +1,4 @@
+pub mod service_constructor;
 pub mod service_id_resolver;
 pub mod service_id;
 pub mod service;
