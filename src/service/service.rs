@@ -1,11 +1,11 @@
-use crate::error::Error;
+
 use crate::service::service_access::ServiceAccess;
 use crate::service::service_instance::ServiceInstance;
 use crate::service::service_constructor::ServiceConstructor;
 use crate::service::service_id::ServiceId;
 use std::fmt;
 use std::sync::{Arc};
-use std::any::{Any, TypeId};
+use std::any::{Any};
 use std::ops::Deref;
 use std::clone::Clone;
 use std::marker::PhantomData;

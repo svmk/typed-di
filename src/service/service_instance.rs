@@ -1,9 +1,9 @@
-use crate::error::Error;
+
 use crate::service::service::Service;
 use crate::service::service_access::ServiceAccess;
 use crate::service::service_name::ServiceName;
 use std::sync::{Arc};
-use std::any::{Any, TypeId};
+use std::any::{Any};
 use std::clone::Clone;
 #[cfg(test)]
 mod service_instance_test;
