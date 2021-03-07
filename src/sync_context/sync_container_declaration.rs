@@ -9,6 +9,11 @@ pub trait SyncContainerDeclaration {
         where
             S: Send + Sync + 'static,
             F: Fn(&SyncResolver) -> Result<S, BuildError> + Send + Sync + 'static;
+
+    fn configure<S, F>(&mut self, service_id: ServiceId<S>, configurator: F) -> Result<(), BuildError>
+        where
+            S: Send + Sync + 'static,
+            F: Fn(&SyncResolver, &mut S) -> Result<(), BuildError> + Send + Sync + 'static;
 }
 
 impl SyncContainerDeclaration for ContainerDeclaration {
@@ -23,4 +28,12 @@ impl SyncContainerDeclaration for ContainerDeclaration {
         self.register_service_builder(service_id, service_builder.into())?;
         return Ok(());
     }
+
+    fn configure<S, F>(&mut self, service_id: ServiceId<S>, configurator: F) -> Result<(), BuildError>
+        where
+            S: Send + Sync + 'static,
+            F: Fn(&SyncResolver, &mut S) -> Result<(), BuildError> + Send + Sync + 'static
+        {
+            unimplemented!()   
+        }
 }

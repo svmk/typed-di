@@ -37,7 +37,7 @@ impl Future for ResolveFuture {
         loop {
             match inner.service {
                 ServiceBuildingState::FutureBuilder(ref builder) => {
-                    let future = match (builder)(&self.context) {
+                    let future = match builder.create_future(&self.context) {
                         Ok(future) => {future},
                         Err(error) => {
                             return Poll::Ready(Err(error));

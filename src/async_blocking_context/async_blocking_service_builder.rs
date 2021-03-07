@@ -16,8 +16,18 @@ pub struct AsyncBlockingServiceBuilder {
     inner: Arc<Mutex<ServiceBuilderInner>>,
 }
 
+struct FutureBuilder {
+    factory: Box<dyn Fn(&SyncResolver) -> Result<Pin<Box<dyn Future<Output=Result<ServiceInstance, Error>> + Send>>, Error> + Send>,
+}
+
+impl FutureBuilder {
+    fn create_future(&self, resolver: &SyncResolver) -> Result<Pin<Box<dyn Future<Output=Result<ServiceInstance, Error>> + Send>>, Error> {
+        return (self.factory)(resolver);
+    }
+}
+
 enum ServiceBuildingState {
-    FutureBuilder(Box<dyn Fn(&SyncResolver) -> Result<Pin<Box<dyn Future<Output=Result<ServiceInstance, Error>> + Send>>, Error> + Send>),
+    FutureBuilder(FutureBuilder),
     ServiceFuturePending(Pin<Box<dyn Future<Output=Result<ServiceInstance, Error>> + Send>>),
     Service(ServiceInstance),
 }
@@ -86,6 +96,9 @@ impl AsyncBlockingServiceBuilder {
             return Ok(future);
         };
         let factory = Box::new(factory);
+        let factory = FutureBuilder {
+            factory,
+        };
         let inner = ServiceBuilderInner {
             service: ServiceBuildingState::FutureBuilder(factory),
         };

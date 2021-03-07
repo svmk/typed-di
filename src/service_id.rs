@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use std::any::{Any, type_name};
 use std::fmt;
 
 #[derive(Debug)]
@@ -17,6 +18,10 @@ impl <T>ServiceId<T> {
 
     pub const fn get_id(&self) -> &'static str {
         return self.id;
+    }
+
+    pub const fn typename() -> ServiceId<T> where T: Any {
+        return ServiceId::new(type_name::<T>());
     }
 }
 
