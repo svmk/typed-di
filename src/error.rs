@@ -1,5 +1,7 @@
 use std::fmt;
 use std::error::Error as StdError;
+use crate::service::service_name::ServiceName;
+use crate::argument::argument_name::ArgumentName;
 mod argument_not_found_error;
 pub use self::argument_not_found_error::ArgumentNotFoundError;
 mod service_not_found_error;
@@ -14,10 +16,12 @@ mod argument_downcast_error;
 pub use self::argument_downcast_error::ArgumentDowncastError;
 mod service_build_error;
 pub use self::service_build_error::ServiceBuildError;
-mod join_error;
-pub use self::join_error::JoinError;
 mod build_error;
 pub use self::build_error::BuildError;
+mod build_error_cast;
+pub use self::build_error_cast::BuildErrorCast;
+mod service_builder_not_found;
+pub use self::service_builder_not_found::ServiceBuilderNotFound;
 
 #[derive(Debug)]
 pub enum Error {
@@ -28,44 +32,42 @@ pub enum Error {
     ServiceAlreadyRegistered(ServiceAlreadyRegisteredError),
     ArgumentDowncastError(ArgumentDowncastError),
     ServiceBuildError(ServiceBuildError),
-    JoinError(JoinError),
+    ServiceBuilderNotFound(ServiceBuilderNotFound),
 }
 
 impl Error {
-    pub fn argument_not_found_error(id: String) -> Error {
+    pub fn argument_not_found_error(id: ArgumentName) -> Error {
         return Error::ArgumentNotFound(ArgumentNotFoundError::new(id));
     }
 
-    pub fn service_not_found_error(id: String) -> Error {
+    pub fn service_not_found_error(id: ServiceName) -> Error {
         return Error::ServiceNotFound(ServiceNotFoundError::new(id));
     }
 
     pub fn service_cast_error(
-        service_id: String,
-        type_name: String,
-        service_type: String,
+        service_name: ServiceName,
     ) -> Error {
-        return Error::ServiceCastError(ServiceCastError::new(service_id, type_name, service_type));
+        return Error::ServiceCastError(ServiceCastError::new(service_name));
     }
 
-    pub fn argument_already_registered(id: String) -> Error {
+    pub fn argument_already_registered(id: ArgumentName) -> Error {
         return Error::RegisterArgument(ArgumentAlreadyRegisteredError::new(id));
     }
 
-    pub fn service_already_registered(id: String) -> Error {
+    pub fn service_already_registered(id: ServiceName) -> Error {
         return Error::ServiceAlreadyRegistered(ServiceAlreadyRegisteredError::new(id));
     }
 
-    pub fn argument_downcast(id: String, argument_type: String) -> Error {
+    pub fn argument_downcast(id: ArgumentName, argument_type: String) -> Error {
         return Error::ArgumentDowncastError(ArgumentDowncastError::new(id, argument_type));
     }
 
-    pub fn service_build(service_id: String, error: BuildError) -> Error {
+    pub fn service_build(service_id: ServiceName, error: BuildError) -> Error {
         return Error::ServiceBuildError(ServiceBuildError::new(service_id, error));
     }
 
-    pub fn join_error(error: JoinError) -> Error {
-        return Error::JoinError(error);
+    pub fn service_builder_not_found(service_id: ServiceName) -> Error {
+        return Error::ServiceBuilderNotFound(ServiceBuilderNotFound::new(service_id));
     }
 }
 
@@ -106,7 +108,7 @@ impl StdError for Error {
             Error::ServiceBuildError(ref error) => {
                 return Some(error);
             },
-            Error::JoinError(ref error) => {
+            Error::ServiceBuilderNotFound(ref error) => {
                 return Some(error);
             },
         }
@@ -155,8 +157,8 @@ impl From<ServiceBuildError> for Error {
     }
 }
 
-impl From<JoinError> for Error {
-    fn from(error: JoinError) -> Self {
-        return Error::JoinError(error);
+impl From<ServiceBuilderNotFound> for Error {
+    fn from(error: ServiceBuilderNotFound) -> Self {
+        return Error::ServiceBuilderNotFound(error);
     }
 }

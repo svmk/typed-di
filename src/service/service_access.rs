@@ -1,6 +1,6 @@
 use crate::error::Error;
-use crate::service_instance::ServiceInstance;
-use crate::service::Service;
+use crate::service::service_instance::ServiceInstance;
+use crate::service::service::Service;
 use std::any::Any;
 
 pub trait ServiceAccess<T> {

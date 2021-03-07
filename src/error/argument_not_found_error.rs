@@ -1,11 +1,12 @@
+use crate::argument::argument_name::ArgumentName;
 use std::fmt;
 #[derive(Debug)]
 pub struct ArgumentNotFoundError {
-    id: String,
+    id: ArgumentName,
 }
 
 impl ArgumentNotFoundError {
-    pub fn new(id: String) -> ArgumentNotFoundError {
+    pub fn new(id: ArgumentName) -> ArgumentNotFoundError {
         return ArgumentNotFoundError {
             id,
         }
@@ -14,7 +15,7 @@ impl ArgumentNotFoundError {
 
 impl fmt::Display for ArgumentNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to find argument with id `{}` in container", self.id)
+        write!(f, "Unable to find argument with id `{:?}` in container", self.id)
     }
 }
 

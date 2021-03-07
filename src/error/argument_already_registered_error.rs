@@ -1,11 +1,12 @@
+use crate::argument::argument_name::ArgumentName;
 use std::fmt;
 #[derive(Debug)]
 pub struct ArgumentAlreadyRegisteredError {
-    id: String,
+    id: ArgumentName,
 }
 
 impl ArgumentAlreadyRegisteredError {
-    pub fn new(id: String) -> ArgumentAlreadyRegisteredError {
+    pub fn new(id: ArgumentName) -> ArgumentAlreadyRegisteredError {
         return ArgumentAlreadyRegisteredError {
             id,
         }
@@ -14,7 +15,7 @@ impl ArgumentAlreadyRegisteredError {
 
 impl fmt::Display for ArgumentAlreadyRegisteredError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to insert argument with id `{}`", self.id)
+        write!(f, "Unable to insert argument with id `{:?}`", self.id)
     }
 }
 

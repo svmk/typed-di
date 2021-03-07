@@ -1,16 +1,17 @@
 use crate::error::Error;
+use crate::argument::argument_name::ArgumentName;
 use std::sync::{Arc};
 use std::any::{Any, type_name};
 use std::clone::Clone;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArgumentInstance {
-    id: &'static str,
+    name: ArgumentName,
     argument: Arc<Box<dyn Any>>,
 }
 
 impl ArgumentInstance {
-    pub fn new<T>(id: &'static str, argument: T) -> ArgumentInstance
+    pub fn new<T>(name: ArgumentName, argument: T) -> ArgumentInstance
         where
             T: 'static,
             T: Any,
@@ -18,7 +19,7 @@ impl ArgumentInstance {
             T: Sync,
     {
         return ArgumentInstance {
-            id,
+            name,
             argument: Arc::new(Box::new(argument)),
         }
     }
@@ -29,7 +30,7 @@ impl ArgumentInstance {
                 return Ok(argument);
             },
             None => {
-                return Err(Error::argument_downcast(self.id.to_string(), type_name::<T>().to_string()))
+                return Err(Error::argument_downcast(self.name.clone(), type_name::<T>().to_string()))
             },
         }
     }
@@ -37,12 +38,3 @@ impl ArgumentInstance {
 
 unsafe impl Sync for ArgumentInstance {}
 unsafe impl Send for ArgumentInstance {}
-
-impl Clone for ArgumentInstance {
-    fn clone(&self) -> Self {
-        return ArgumentInstance {
-            id: self.id,
-            argument: self.argument.clone(),
-        }
-    }
-}

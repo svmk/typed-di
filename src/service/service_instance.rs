@@ -1,44 +1,35 @@
 use crate::error::Error;
-use crate::service::Service;
-use crate::service_access::ServiceAccess;
+use crate::service::service::Service;
+use crate::service::service_access::ServiceAccess;
+use crate::service::service_name::ServiceName;
 use std::sync::{Arc};
-use std::any::{Any, TypeId, type_name};
+use std::any::{Any, TypeId};
 use std::clone::Clone;
 
 #[derive(Debug)]
 pub struct ServiceInstance {
     type_id: TypeId,
-    service_type: &'static str,
-    service_id: &'static str,
+    service_name: ServiceName,
     service: Arc<Box<dyn Any>>,
 }
 
 impl ServiceInstance {
-    pub fn new<T>(service_id: &'static str, service: T) -> ServiceInstance
+    pub fn new(service_name: ServiceName, service: Box<dyn Any>) -> ServiceInstance
         where
-            T: 'static,
-            T: Any,
-            T: Send,
-            T: Sync,
     {
         return ServiceInstance {
-            type_id: TypeId::of::<T>(),
-            service_type: type_name::<T>(),
-            service_id,
+            type_id: service.type_id(),
+            service_name,
             service: Arc::new(Box::new(service)),
         }
     }
 
-    pub fn get_id(&self) -> &'static str {
-        return self.service_id;
+    pub fn get_name(&self) -> &ServiceName {
+        return &self.service_name;
     }
 
     pub fn as_service<S>(self) -> Result<Service<S>, Error> where S: Any, S: 'static {
         return Service::from_instance(self);
-    }
-
-    pub fn get_service_type(&self) -> &'static str {
-        return self.service_type;
     }
 
     pub fn get_type_id(&self) -> TypeId {
@@ -58,8 +49,7 @@ impl Clone for ServiceInstance {
     fn clone(&self) -> Self {
         return ServiceInstance {
             type_id: self.type_id,
-            service_id: self.service_id,
-            service_type: self.service_type,
+            service_name: self.service_name.clone(),
             service: self.service.clone(),
         }
     }
