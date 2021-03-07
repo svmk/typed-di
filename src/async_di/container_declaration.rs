@@ -76,6 +76,28 @@ impl ContainerDeclaration {
                 return Ok(());
             }
 
+    pub fn register_ready<S, Fut, F>(&mut self, service_id: ServiceId<S>, factory: F) -> Result<(), Error>
+        where
+            F: Fn(&Resolver) -> Fut + Send + Sync + 'static,
+            S: Send + Sync + 'static,
+            Fut: Future<Output=S> + Send + 'static {
+                let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> {
+                    let future = (factory)(resolver);
+                    let future = future.map(move |service| -> Result<Box<dyn Any + Send>, Error> {
+                        let service: Box<dyn Any + Send> = Box::new(service);
+                        return Ok(service)
+                    });
+                    return Box::pin(future);
+                };
+                let factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> + Send> = Box::new(factory);
+                let service_builder = ServiceBuilder::new(
+                    service_id.get_name().clone(),
+                    factory,
+                );
+                self.register_service_builder(service_id, service_builder)?;
+                return Ok(());
+            }
+
     pub fn configure<S, Fut, F, E>(&mut self, service_id: ServiceId<S>, configurator: F) -> Result<(), Error>
         where
             F: Fn(&Resolver, &mut S) -> Fut + Send + Sync + 'static,
