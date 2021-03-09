@@ -1,4 +1,4 @@
-use crate::error::{BuildErrorCast};
+use crate::error::BuildError;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::async_di::service_builder::ServiceBuilder;
@@ -42,12 +42,11 @@ impl ContainerDeclaration {
         return Ok(());
     }
 
-    pub fn register<S, Fut, F, E>(&mut self, service_id: ServiceId<S>, factory: F) -> Result<(), Error>
+    pub fn register<S, Fut, F>(&mut self, service_id: ServiceId<S>, factory: F) -> Result<(), Error>
         where
             F: Fn(&Resolver) -> Fut + Send + Sync + 'static,
             S: Send + Sync + 'static,
-            E: BuildErrorCast + 'static,
-            Fut: Future<Output=Result<S, E>> + Send + Sync + 'static {
+            Fut: Future<Output=Result<S, BuildError>> + Send + Sync + 'static {
                 let service_name = service_id.get_name().clone();
                 let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
                     let future = (factory)(resolver);
@@ -59,7 +58,6 @@ impl ContainerDeclaration {
                                 return Ok(service)
                             },
                             Err(error) => {
-                                let error = error.into_build_error();
                                 let error = Error::service_build(service_name.clone(), error);
                                 return Err(error);
                             },
@@ -98,12 +96,11 @@ impl ContainerDeclaration {
                 return Ok(());
             }
 
-    pub fn configure<S, Fut, F, E>(&mut self, service_id: ServiceId<S>, configurator: F) -> Result<(), Error>
+    pub fn configure<S, Fut, F>(&mut self, service_id: ServiceId<S>, configurator: F) -> Result<(), Error>
         where
             F: Fn(&Resolver, &mut S) -> Fut + Send + Sync + 'static,
             S: Send + Sync + Any + 'static,
-            E: BuildErrorCast + 'static,
-            Fut: Future<Output=Result<(), E>> + Send + Sync + 'static {
+            Fut: Future<Output=Result<(), BuildError>> + Send + Sync + 'static {
                 let service_name = service_id.get_name().clone();
                 let configurator = move |resolver: &Resolver, service: &mut dyn Any| -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> {
                     let service = match service.downcast_mut::<S>() {
@@ -115,13 +112,12 @@ impl ContainerDeclaration {
                     };
                     let future = (configurator)(resolver, service);
                     let service_name = service_name.clone();
-                    let future = future.map(move |result: Result<(), E>| {
+                    let future = future.map(move |result: Result<(), BuildError>| {
                         match result {
                             Ok(()) => {
                                 return Ok(());
                             },
                             Err(error) => {
-                                let error = error.into_build_error();
                                 let error = Error::service_build(service_name.clone(), error);
                                 return Err(error);
                             },
