@@ -11,18 +11,20 @@ use std::clone::Clone;
 use std::fmt;
 mod service_builder_state;
 use self::service_builder_state::ServiceBuilderState;
+#[cfg(test)]
+mod service_builder_test;
 
 pub struct ServiceBuilder {
     service_name: ServiceName,
-    factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> + Send>,
-    configurators: Vec<Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send>> + Send>>,
+    factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
+    configurators: Vec<Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>>,
     state: Mutex<ServiceBuilderState>,
 }
 
 impl ServiceBuilder {
     pub fn new(
         service_name: ServiceName,
-        factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> + Send>,
+        factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
     ) -> ServiceBuilder {
         return ServiceBuilder {
             service_name,
@@ -32,7 +34,7 @@ impl ServiceBuilder {
         }
     }
 
-    pub fn register_configurator(&mut self, configurator: Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send>> + Send>) {
+    pub fn register_configurator(&mut self, configurator: Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>) {
         self.configurators.push(configurator);
     }
 

@@ -9,6 +9,8 @@ use crate::service::service::Service;
 use crate::service::service_id::ServiceId;
 use std::collections::HashMap;
 use std::any::Any;
+#[cfg(test)]
+mod container_test;
 
 #[derive(Debug)]
 pub struct Container {

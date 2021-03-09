@@ -47,15 +47,15 @@ impl ContainerDeclaration {
             F: Fn(&Resolver) -> Fut + Send + Sync + 'static,
             S: Send + Sync + 'static,
             E: BuildErrorCast + 'static,
-            Fut: Future<Output=Result<S, E>> + Send + 'static {
+            Fut: Future<Output=Result<S, E>> + Send + Sync + 'static {
                 let service_name = service_id.get_name().clone();
-                let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> {
+                let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
                     let future = (factory)(resolver);
                     let service_name = service_name.clone();
                     let future = future.map(move |service| {
                         match service {
                             Ok(service) => {
-                                let service: Box<dyn Any + Send> = Box::new(service);
+                                let service: Box<dyn Any + Send + Sync> = Box::new(service);
                                 return Ok(service)
                             },
                             Err(error) => {
@@ -67,7 +67,7 @@ impl ContainerDeclaration {
                     });
                     return Box::pin(future);
                 };
-                let factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> + Send> = Box::new(factory);
+                let factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync> = Box::new(factory);
                 let service_builder = ServiceBuilder::new(
                     service_id.get_name().clone(),
                     factory,
@@ -79,17 +79,17 @@ impl ContainerDeclaration {
     pub fn register_ready<S, Fut, F>(&mut self, service_id: ServiceId<S>, factory: F) -> Result<(), Error>
         where
             F: Fn(&Resolver) -> Fut + Send + Sync + 'static,
-            S: Send + Sync + 'static,
-            Fut: Future<Output=S> + Send + 'static {
-                let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> {
+            S: Send + Sync + Sync + 'static,
+            Fut: Future<Output=S> + Send + Sync + 'static {
+                let factory = move |resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
                     let future = (factory)(resolver);
-                    let future = future.map(move |service| -> Result<Box<dyn Any + Send>, Error> {
-                        let service: Box<dyn Any + Send> = Box::new(service);
+                    let future = future.map(move |service| -> Result<Box<dyn Any + Send + Sync>, Error> {
+                        let service: Box<dyn Any + Send + Sync> = Box::new(service);
                         return Ok(service)
                     });
                     return Box::pin(future);
                 };
-                let factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send>, Error>> + Send>> + Send> = Box::new(factory);
+                let factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync> = Box::new(factory);
                 let service_builder = ServiceBuilder::new(
                     service_id.get_name().clone(),
                     factory,
@@ -103,9 +103,9 @@ impl ContainerDeclaration {
             F: Fn(&Resolver, &mut S) -> Fut + Send + Sync + 'static,
             S: Send + Sync + Any + 'static,
             E: BuildErrorCast + 'static,
-            Fut: Future<Output=Result<(), E>> + Send + 'static {
+            Fut: Future<Output=Result<(), E>> + Send + Sync + 'static {
                 let service_name = service_id.get_name().clone();
-                let configurator = move |resolver: &Resolver, service: &mut dyn Any| -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send>> {
+                let configurator = move |resolver: &Resolver, service: &mut dyn Any| -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> {
                     let service = match service.downcast_mut::<S>() {
                         Some(service) => service,
                         None => {
@@ -129,7 +129,7 @@ impl ContainerDeclaration {
                     });
                     return Box::pin(future);
                 };
-                let configurator: Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send>> + Send> = Box::new(configurator);
+                let configurator: Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync> = Box::new(configurator);
                 let service_builder = self.get_mut_service_builder(service_id.get_name())?;
                 service_builder.register_configurator(configurator);
                 return Ok(());

@@ -5,6 +5,9 @@ use crate::argument::argument_id::ArgumentId;
 use crate::async_di::container::Container;
 use std::any::Any;
 
+#[cfg(test)]
+mod resolver_test;
+
 #[derive(Debug)]
 pub struct Resolver<'a> {
     container: &'a Container,
