@@ -16,15 +16,15 @@ mod service_builder_test;
 
 pub struct ServiceBuilder {
     service_name: ServiceName,
-    factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
-    configurators: Vec<Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>>,
+    factory: Box<dyn Fn(Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
+    configurators: Vec<Box<dyn Fn(Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>>,
     state: Mutex<ServiceBuilderState>,
 }
 
 impl ServiceBuilder {
     pub fn new(
         service_name: ServiceName,
-        factory: Box<dyn Fn(&Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
+        factory: Box<dyn Fn(Resolver) -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> + Send + Sync>,
     ) -> ServiceBuilder {
         return ServiceBuilder {
             service_name,
@@ -34,11 +34,11 @@ impl ServiceBuilder {
         }
     }
 
-    pub fn register_configurator(&mut self, configurator: Box<dyn Fn(&Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>) {
+    pub fn register_configurator(&mut self, configurator: Box<dyn Fn(Resolver, &mut dyn Any) -> Pin<Box<dyn Future<Output=Result<(), Error>> + Send + Sync>> + Send + Sync>) {
         self.configurators.push(configurator);
     }
 
-    pub async fn resolve<T>(&self, resolver: &Resolver<'_>) -> Result<Service<T>, Error> 
+    pub async fn resolve<T>(&self, resolver: Resolver) -> Result<Service<T>, Error> 
     where
         T: Any + Send + 'static,
     {
@@ -46,10 +46,10 @@ impl ServiceBuilder {
         if let Some(service_instance) = state.get_service_instance() {
             return Ok(service_instance.as_service());
         }
-        let service_factory = (self.factory)(resolver);
+        let service_factory = (self.factory)(resolver.resolver_clone());
         let mut service = service_factory.await?;
         for configurator in self.configurators.iter() {
-            let configurator_future = (configurator)(resolver, service.as_mut());
+            let configurator_future = (configurator)(resolver.resolver_clone(), service.as_mut());
             configurator_future.await?;
         }
         let service_instance = ServiceInstance::new(self.service_name.clone(), service);

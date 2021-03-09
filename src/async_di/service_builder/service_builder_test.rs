@@ -14,7 +14,7 @@ fn ensure_send_sync<T>(_value: T) where T: Send, T: Sync, {}
 
 #[test]
 fn test_service_builder_send_sync() {
-    let factory = |_resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
+    let factory = |_resolver: Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
         panic!("not required");
     };
     let factory = Box::new(factory);
@@ -24,13 +24,13 @@ fn test_service_builder_send_sync() {
 
 #[test]
 fn test_service_builder_resolver_send_sync() {
-    let factory = |_resolver: &Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
+    let factory = |_resolver: Resolver| -> Pin<Box<dyn Future<Output=Result<Box<dyn Any + Send + Sync>, Error>> + Send + Sync>> {
         panic!("not required");
     };
     let factory = Box::new(factory);
     let service_builder = ServiceBuilder::new(SERVICE_NAME.clone(), factory);
     let container = Container::new(HashMap::new(), HashMap::new());
-    let resolver = Resolver::new(&container);
-    let future = service_builder.resolve::<()>(&resolver);
+    let resolver = Resolver::new(container);
+    let future = service_builder.resolve::<()>(resolver);
     ensure_send_sync(future);
 }

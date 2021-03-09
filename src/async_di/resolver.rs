@@ -9,16 +9,22 @@ use std::any::Any;
 mod resolver_test;
 
 #[derive(Debug)]
-pub struct Resolver<'a> {
-    container: &'a Container,
+pub struct Resolver {
+    container: Container,
 }
 
-impl Resolver<'_> {
+impl Resolver {
     pub fn new(
-        container: &'_ Container,
+        container: Container,
     ) -> Resolver {
         return Resolver {
             container,
+        }
+    }
+
+    pub (crate) fn resolver_clone(&self) -> Resolver {
+        return Resolver {
+            container: self.container.container_clone(),
         }
     }
     
